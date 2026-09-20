@@ -6,23 +6,7 @@ et export vers OpenSearch.
 
 ## Architecture
 
-```
-                    ┌──────────────────┐
-   Générateur  ───▶ │     Redpanda     │   (broker Kafka-compatible)
-  (docker)          │  4 topics        │
-                    └──────────────────┘
-                            │
-                            ▼
-                    ┌──────────────────┐   CREATE SOURCE
-                    │    RisingWave    │   (connexion topics)
-                    └──────────────────┘
-                            │
-                            ▼                          ┌──────────┐
-                    ┌──────────────────┐  CREATE SINK  │ OpenSearch│
-                    │ Materialized Views│ ───────────▶ │ (Bulk API)│
-                    │   (agrégations)  │               └──────────┘
-                    └──────────────────┘
-```
+![Schema](./assets/schema.png)
 
 Chaque concept métier arrive dans un **topic dédié** :
 
