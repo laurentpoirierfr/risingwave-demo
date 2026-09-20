@@ -1,0 +1,71 @@
+# ============================================================
+# values.yaml — déploiement RisingWave (helm risingwavelabs/risingwave)
+# Périmètre : RisingWave uniquement, avec :
+#   - Meta store  : PostgreSQL bundle (métadonnées du cluster)
+#   - State store : MinIO bundle (object store S3-compatible)
+#   - Observabilité : exporter métriques + PodMonitor (Prometheus)
+# Rien d'autre (pas d'OpenSearch, pas de Kafka externe).
+# ============================================================
+
+# Active les dépendances groupées (PostgreSQL + MinIO)
+tags:
+  bundle: true
+
+# ---- Image --------------------------------------------------
+image:
+  tag: "v3.0.3"
+
+# ---- Meta store : PostgreSQL (bundle) ------------------------
+metaStore:
+  postgresql:
+    enabled: true
+  # backend "sql" est choisi automatiquement quand le bundle PG est actif
+
+# ---- State store : MinIO (bundle, S3-compatible) --------------
+stateStore:
+  minio:
+    enabled: false          # false : le bundle crée le MinIO interne
+  dataDirectory: hummock001
+
+minio:
+  auth:
+    rootUser: hummockadmin
+    rootPassword: hummockadmin
+  defaultBuckets: risingwave-state
+
+# ---- Exposition (interface PostgreSQL) --------------------------
+service:
+  type: ClusterIP
+  port: 4567
+
+# ---- Observabilité : exporter + PodMonitor ---------------------
+monitor:
+  annotations:
+    enabled: true
+  podMonitor:
+    enabled: true
+
+# ---- Ressources (modérées pour Minikube) -----------------------
+metaNode:
+  replicaCount: 1
+  resources:
+    requests: { cpu: "250m", memory: 512Mi }
+    limits:   { cpu: "1",    memory: 1Gi }
+
+computeNode:
+  replicaCount: 1
+  resources:
+    requests: { cpu: "1",     memory: 2Gi }
+    limits:   { cpu: "2",     memory: 4Gi }
+
+frontendNode:
+  replicaCount: 1
+  resources:
+    requests: { cpu: "250m", memory: 512Mi }
+    limits:   { cpu: "1",    memory: 1Gi }
+
+compactorNode:
+  replicaCount: 1
+  resources:
+    requests: { cpu: "250m", memory: 512Mi }
+    limits:   { cpu: "1",    memory: 1Gi }

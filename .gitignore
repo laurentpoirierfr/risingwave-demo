@@ -1,0 +1,81 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Runtime files
+*.pid
+*.seed
+
+# Editor/IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Go
+/bin/
+*.exe
+*.test
+*.out
+
+# Go vendor / dependency dirs (optional)
+vendor/
+Godeps/
+
+# Build
+/build/
+/dist/
+
+# Node
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# Docker temporary override files
+docker-compose.override.yml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Kubernetes
+.kube/
+
+# Minikube/local clusters
+minikube/
+
+# Common archives/backups
+*.zip
+*.tar.gz
+*.tgz
+*.bak
+*~
+
+# Swap / temp
+*.swp
+
+# Slides output
+slides/*.pdf
+slides/.cache/
+
+# Docker/compose volumes local folders (project-specific)
+*_data/
+*-data/
+
+# IDE workspace
+.vscode/
+
+# Ignore system artifacts
+ehthumbs.db
+Icon?
+
+# Optional: ignore generated images in assets (uncomment if desired)
+# assets/*.png
+# assets/*.svg

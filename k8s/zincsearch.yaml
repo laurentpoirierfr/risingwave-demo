@@ -1,0 +1,86 @@
+# ============================================================
+# zincsearch.yaml — déploiement ZincSearch (démo / prototype)
+# ZincSearch : moteur de recherche full-text en GO, un seul pod,
+# API compatible Elasticsearch (chemin /es), UI web intégrée.
+# Test/proto uniquement : PVC local, sans HA ni TLS.
+# ============================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: zincsearch
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: zinc-data
+  namespace: zincsearch
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zincsearch
+  namespace: zincsearch
+  labels:
+    app: zincsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zincsearch
+  template:
+    metadata:
+      labels:
+        app: zincsearch
+    spec:
+      containers:
+        - name: zincsearch
+          image: public.ecr.aws/zinclabs/zincsearch:latest
+          ports:
+            - name: http
+              containerPort: 4080
+          env:
+            - name: ZINC_FIRST_ADMIN_USER
+              value: "admin"
+            - name: ZINC_FIRST_ADMIN_PASSWORD
+              value: "admin"
+            - name: ZINC_DATA_PATH
+              value: "/data"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests: { cpu: "200m", memory: 512Mi }
+            limits:   { cpu: "1",    memory: 1Gi }
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: zinc-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zincsearch
+  namespace: zincsearch
+  labels:
+    app: zincsearch
+spec:
+  type: ClusterIP
+  selector:
+    app: zincsearch
+  ports:
+    - name: http
+      port: 4080
+      targetPort: http

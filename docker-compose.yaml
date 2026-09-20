@@ -1,0 +1,288 @@
+x-image: &image
+  image: ${RW_IMAGE:-risingwavelabs/risingwave:v3.0.0}
+
+services:
+  risingwave-standalone:
+    <<: *image
+    command: "standalone --meta-opts=\" \
+      --listen-addr 0.0.0.0:5690 \
+      --advertise-addr 0.0.0.0:5690 \
+      --dashboard-host 0.0.0.0:5691 \
+      --prometheus-host 0.0.0.0:1250 \
+      --prometheus-endpoint http://prometheus-0:9500 \
+      --backend sql \
+      --sql-endpoint postgres://postgres:@postgres-0:5432/metadata \
+      --state-store hummock+minio://hummockadmin:hummockadmin@minio-0:9301/hummock001 \
+      --data-directory hummock_001 \" \
+      --compute-opts=\" \
+      --listen-addr 0.0.0.0:5688 \
+      --prometheus-listener-addr 0.0.0.0:1250 \
+      --advertise-addr 0.0.0.0:5688 \
+      --async-stack-trace verbose \
+      --parallelism 8 \
+      --total-memory-bytes 21474836480 \
+      --role both \
+      --meta-address http://0.0.0.0:5690 \
+      --memory-manager-target-bytes 22333829939 \" \
+      --frontend-opts=\" \
+      --listen-addr 0.0.0.0:4566 \
+      --advertise-addr 0.0.0.0:4566 \
+      --prometheus-listener-addr 0.0.0.0:1250 \
+      --health-check-listener-addr 0.0.0.0:6786 \
+      --meta-addr http://0.0.0.0:5690 \
+      --frontend-total-memory-bytes=4294967296\" \
+      --compactor-opts=\" \
+      --listen-addr 0.0.0.0:6660 \
+      --prometheus-listener-addr 0.0.0.0:1250 \
+      --advertise-addr 0.0.0.0:6660 \
+      --meta-address http://0.0.0.0:5690 \
+      --compactor-total-memory-bytes=4294967296\""
+    expose:
+      - "6660"
+      - "4566"
+      - "5688"
+      - "5690"
+      - "1250"
+      - "5691"
+    ports:
+      - "4566:4566"
+      - "5690:5690"
+      - "5691:5691"
+      - "1250:1250"
+    depends_on:
+      - postgres-0
+      - minio-0
+      - minio-init
+    environment:
+      RUST_BACKTRACE: "1"
+      ENABLE_TELEMETRY: ${ENABLE_TELEMETRY:-true}
+      RW_TELEMETRY_TYPE: ${RW_TELEMETRY_TYPE:-"docker-compose"}
+      RW_SECRET_STORE_PRIVATE_KEY_HEX: ${RW_SECRET_STORE_PRIVATE_KEY_HEX:-0123456789abcdef0123456789abcdef}
+      RW_LICENSE_KEY: ${RW_LICENSE_KEY:-}
+    volumes:
+      - "./sql:/sql:ro"
+    container_name: risingwave-standalone
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/6660; exit $$?;'
+        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/5688; exit $$?;'
+        - bash -c '> /dev/tcp/127.0.0.1/4566; exit $$?;'
+        - bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/5690; exit $$?;'
+      interval: 1s
+      timeout: 5s
+      retries: 20
+    restart: always
+
+  postgres-0:
+    image: "postgres:15-alpine"
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=metadata
+    ports:
+      - "5432:5432"
+    container_name: risingwave-postgres
+
+  minio-0:
+    image: "quay.io/minio/minio:latest"
+    command:
+      - server
+      - "--address"
+      - "0.0.0.0:9301"
+      - "--console-address"
+      - "0.0.0.0:9400"
+      - "/data"
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9301:9301"
+      - "9400:9400"
+    environment:
+      - MINIO_ROOT_USER=hummockadmin
+      - MINIO_ROOT_PASSWORD=hummockadmin
+    container_name: risingwave-minio
+
+  minio-init:
+    image: "quay.io/minio/mc:latest"
+    depends_on:
+      - minio-0
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio-0:9301 hummockadmin hummockadmin) do
+        echo 'Waiting for MinIO...';
+        sleep 2;
+      done;
+      /usr/bin/mc mb --ignore-existing local/hummock001;
+      echo 'Bucket hummock001 created.';
+      "
+    container_name: risingwave-minio-init
+
+  prometheus-0:
+    image: "prom/prometheus:latest"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/console_templates"
+      - "--web.enable-lifecycle"
+      - "--web.listen-address=0.0.0.0:9500"
+    volumes:
+      - "./prometheus.yaml:/etc/prometheus/prometheus.yaml"
+    ports:
+      - "9500:9500"
+    container_name: risingwave-prometheus
+
+  redpanda:
+    image: "docker.redpanda.com/redpandadata/redpanda:latest"
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - "PLAIN://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092"
+      - --advertise-kafka-addr
+      - "PLAIN://redpanda:29092,OUTSIDE://localhost:9092"
+      - --rpc-addr
+      - "0.0.0.0:33145"
+      - --advertise-rpc-addr
+      - "redpanda:33145"
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+      - "9644:9644"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - rpk cluster health --config /etc/redpanda/redpanda.yaml
+      interval: 5s
+      timeout: 10s
+      retries: 30
+    container_name: redpanda
+
+  opensearch:
+    image: "opensearchproject/opensearch:2"
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_PERFORMANCE_ANALYZER_AGENT_CLI=true
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -sf http://localhost:9200/_cluster/health || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 60
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    container_name: opensearch
+
+  opensearch-dashboards:
+    image: "opensearchproject/opensearch-dashboards:2"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5601:5601"
+    container_name: opensearch-dashboards
+    restart: always
+
+  redpanda-console:
+    image: "docker.redpanda.com/redpandadata/console:v2.7.2"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      - KAFKA_BROKERS=redpanda:29092
+      - REDPANDA_ADMIN_API=http://redpanda:9644
+    ports:
+      - "8082:8080"
+    container_name: redpanda-console
+    restart: always
+
+  redpanda-init:
+    image: "docker.redpanda.com/redpandadata/redpanda:latest"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 3
+        for topic in orders.clients orders.lines orders.commands; do
+          echo "==> creating topic $$topic"
+          rpk topic create "$$topic" --brokers redpanda:29092 --partitions 1 --replicas 1 || true
+        done
+        echo "Topics Redpanda prêts."
+    restart: "no"
+    container_name: redpanda-init
+
+  generator:
+    build:
+      context: ./generator
+    profiles: ["demo"]
+    environment:
+      REDPANDA_BOOTSTRAP: "redpanda:29092"
+      TOPIC_PREFIX: "orders"
+      MESSAGE_INTERVAL_MS: "500"
+    depends_on:
+      - redpanda
+    restart: "no"
+    container_name: orders-generator
+
+  risingwave-init:
+    image: "postgres:15-alpine"
+    user: "root"
+    depends_on:
+      risingwave-standalone:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - "./sql:/sql:ro"
+      - "./scripts:/scripts:ro"
+    entrypoint: ["sh", "/scripts/init_rw.sh"]
+    restart: "no"
+    container_name: risingwave-init
+
+  risingwave-console:
+    image: "risingwavelabs/risingwave-console:v0.5.1-pgbundle"
+    ports:
+      - "8020:8020"
+    environment:
+      RCONSOLE_ROOT_PASSWORD: "root"
+      RW_LICENSE_KEY: ${RW_LICENSE_KEY:-}
+    volumes:
+      - risingwave-console-data:/var/lib/postgresql
+    container_name: risingwave-console
+    restart: always
+
+volumes:
+  minio-data:
+  risingwave-console-data:
+  opensearch-data:

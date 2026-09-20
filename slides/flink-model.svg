@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430">
+  <defs>
+    <linearGradient id="src" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#61afef"/>
+      <stop offset="100%" stop-color="#98c379"/>
+    </linearGradient>
+    <linearGradient id="cluster" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2c313a"/>
+      <stop offset="100%" stop-color="#21252b"/>
+    </linearGradient>
+    <linearGradient id="op" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2c313a"/>
+      <stop offset="100%" stop-color="#262b33"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d19a66"/>
+      <stop offset="100%" stop-color="#61afef"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#61afef"/>
+    </marker>
+    <marker id="arrowd" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#56b6c2"/>
+    </marker>
+  </defs>
+
+  <!-- fond neutre sombre -->
+  <rect width="1200" height="430" fill="#21252b"/>
+  <rect width="1200" height="430" fill="#61afef" opacity="0.04"/>
+  <rect width="1200" height="430" fill="#56b6c2" opacity="0.05"/>
+
+  <!-- ===== Source (gauche) ===== -->
+  <g>
+    <rect x="60" y="150" width="250" height="120" rx="16" ry="16"
+          fill="#2c313a" stroke="url(#src)" stroke-width="2"/>
+  </g>
+  <text x="185" y="200" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-weight="700"
+        font-size="24" fill="#ffffff">Source</text>
+  <text x="185" y="232" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="17"
+        fill="#abb2bf">Kafka · Kinesis · Pulsar</text>
+  <text x="185" y="254" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="15"
+        fill="#7f8794">event streams</text>
+
+  <!-- flèche source -> cluster -->
+  <line x1="310" y1="210" x2="360" y2="210" stroke="#61afef" stroke-width="4"
+        marker-end="url(#arrow)"/>
+  <text x="335" y="195" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="15"
+        fill="#56b6c2">ingest</text>
+
+  <!-- ===== Flink Cluster (centre) ===== -->
+  <g>
+    <rect x="360" y="90" width="470" height="250" rx="18" ry="18"
+          fill="url(#cluster)" stroke="#61afef" stroke-opacity="0.35" stroke-width="1.5"/>
+  </g>
+  <text x="595" y="130" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-weight="700"
+        font-size="24" fill="#56b6c2">Flink Cluster</text>
+  <line x1="505" y1="140" x2="685" y2="140" stroke="url(#accent)" stroke-width="3"/>
+
+  <!-- opérateurs -->
+  <g>
+    <rect x="390" y="150" width="185" height="90" rx="14" ry="14"
+          fill="url(#op)" stroke="#61afef" stroke-opacity="0.8" stroke-width="1.5"/>
+  </g>
+  <text x="482" y="190" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-weight="700"
+        font-size="20" fill="#e6e6e6">Operator</text>
+  <text x="482" y="214" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="15"
+        fill="#7f8794">map · filter · window</text>
+
+  <g>
+    <rect x="620" y="150" width="185" height="90" rx="14" ry="14"
+          fill="url(#op)" stroke="#61afef" stroke-opacity="0.8" stroke-width="1.5"/>
+  </g>
+  <text x="712" y="190" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-weight="700"
+        font-size="20" fill="#e6e6e6">Sink</text>
+  <text x="712" y="214" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="15"
+        fill="#7f8794">écrit le résultat</text>
+
+  <line x1="575" y1="195" x2="620" y2="195" stroke="#61afef" stroke-width="3"
+        marker-end="url(#arrow)"/>
+
+  <!-- état dans le cluster -->
+  <text x="482" y="275" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="16"
+        fill="#7f8794">État</text>
+  <line x1="482" y1="240" x2="482" y2="262" stroke="#56b6c2" stroke-width="3"
+        stroke-dasharray="4 4" marker-end="url(#arrowd)"/>
+
+  <!-- ===== Sink (droite) ===== -->
+  <g>
+    <rect x="920" y="150" width="210" height="120" rx="16" ry="16"
+          fill="#2c313a" stroke="#61afef" stroke-opacity="0.9" stroke-width="2"/>
+  </g>
+  <text x="1025" y="200" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-weight="700"
+        font-size="26" fill="#ffffff">Sink</text>
+  <text x="1025" y="232" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="18"
+        fill="#abb2bf">Kafka · S3 · JDBC</text>
+  <text x="1025" y="254" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="16"
+        fill="#7f8794">sinks / targets</text>
+
+  <!-- flèche cluster -> sink -->
+  <line x1="830" y1="210" x2="920" y2="210" stroke="#61afef" stroke-width="4"
+        marker-end="url(#arrow)"/>
+  <text x="875" y="195" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="16"
+        fill="#56b6c2">output</text>
+
+  <!-- ===== Checkpoints -> RocksDB (bas) ===== -->
+  <line x1="480" y1="340" x2="480" y2="378" stroke="#56b6c2" stroke-width="3"
+        marker-end="url(#arrowd)"/>
+  <text x="540" y="366" text-anchor="start"
+        font-family="JetBrains Mono, monospace" font-size="16"
+        fill="#56b6c2">checkpoints</text>
+
+  <g>
+    <rect x="330" y="380" width="520" height="40" rx="12" ry="12"
+          fill="#2c313a" stroke="#98c379" stroke-opacity="0.6" stroke-width="1.5"/>
+  </g>
+  <text x="590" y="405" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="15"
+        fill="#98c379">RocksDB / fichiers d'état (persistance de reprise)</text>
+</svg>
